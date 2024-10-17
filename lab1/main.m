@@ -26,18 +26,7 @@ xlabel('Frequency (Hz)');
 ylabel('Amplitude');
 title('Exercise 2');
 
-Fs = 1 / (t(2) - t(1));
-N = length(y);
-Y = fft(y);
-P2 = abs(Y/N);
-P1 = P2(1:floor(N/2)+1);
-P1(2:end-1) = 2*P1(2:end-1);
-
-f_all = Fs*(0:floor(N/2))/N;
-
-[max_amplitude, max_index] = max(P1);
-max_freq = round(f_all(max_index));
-disp(['max_freq: ', num2str(max_freq), ' Hz']);
+disp(['max_freq: ', num2str(round(max(f_axistwo))), ' Hz']);
 
 %y_fft = fft(y_samples);
 %n = length(y_fft);
@@ -74,12 +63,15 @@ xlabel('Frequency (Hz)');
 ylabel('Amplitude');
 title('5 exercise');
 
+fprintf("Ширина спектра: %.2f\n", max(y_fft(:)));
+fprintf('Занято памяти (Кб): %.2f\n', whos("y_fft").bytes / 1024);
+
+
 %6 задание
 figure;
 plot(ts, y_samples, 'o-', 'DisplayName', 'Оцифрованный сигнал');
 
 hold on;
-y_cont = A * sin(2 * pi * f * ts + phi);
 plot(t, y, '--', 'DisplayName', 'Оригинальный сигнал');
 xlabel("Time (s)");
 ylabel("Amplitude");
@@ -126,14 +118,14 @@ title('8 exercise');
 
 %10 задание
 
-fprintf('%d\n',length(y) / 13)
-fprintf('%d\n',Fs)
+fprintf('%.2f\n',length(y) / 13)
+fprintf('%.2f\n',Fs)
 
 %11 задание
 figure;
 y1=downsample(y, 10);
 zvuk = audioplayer(y1,Fs/10); 
-% play(zvuk);
+%play(zvuk);
 plot(y1); 
 title('11 exercise');
 
@@ -152,39 +144,45 @@ title('Амплитудный спектр прореженного сигнал
 
 %13 задание 
 
+y = A * cos(2 * pi * f * t + phi);
+
 function y_quantized = quantize_signal(y, bits)
-    levels = 2^bits - 1;                                          % Количество уровней
+    levels = 2^bits - 1; 
     y_min = min(y);
     y_max = max(y);
-    y_norm = (y - y_min) / (y_max - y_min);                       % Нормировка
-    y_quantized = round(y_norm * levels);                         % Округление до уровней
-    y_quantized = y_quantized / levels * (y_max - y_min) + y_min; % Обратное масштабирование
+    y_norm = (y - y_min) / (y_max - y_min); 
+    y_quantized = round(y_norm * levels); 
+    y_quantized = y_quantized / levels;
+    y_quantized = y_quantized * (y_max - y_min) + y_min;
 end
 
-y_q3 = quantize_signal(y, 3);
-Y_q3 = fft(y_q3);
+bit_depths = [3, 4, 5, 6];
 
-figure;
-plot(abs(Y_q3));
-title('Спектр сигнала с разрядностью 3 бита');
-
-y_q4 = quantize_signal(y, 4);
-Y_q4 = fft(y_q3);
-
-figure;
-plot(abs(Y_q4));
-title('Спектр сигнала с разрядностью 4 бита');
-
-y_q5 = quantize_signal(y, 5);
-Y_q5 = fft(y_q5);
-
-figure;
-plot(abs(Y_q5));
-title('Спектр сигнала с разрядностью 5 бита');
-
-y_q6 = quantize_signal(y, 6);
-Y_q6 = fft(y_q6);
-
-figure;
-plot(abs(Y_q6));
-title('Спектр сигнала с разрядностью 6 бита');
+for bits = bit_depths
+    quantized_signal = quantize_signal(y , bits);
+            
+    Y = fft(y);
+    Y_quantized = fft(quantized_signal);
+            
+    amplitude_spectrum = abs(Y);
+    amplitude_spectrum_quantized = abs(Y_quantized);
+        
+    quantization_error = y - quantized_signal;
+    mean_quantization_error = mean(abs(quantization_error));
+        
+    f = (0:length(y)-1) * (fs / length(y));
+        
+    figure;
+    plot(f, amplitude_spectrum, 'b', 'DisplayName', 'Оригинальный сигнал');
+    hold on;
+    plot(f, amplitude_spectrum_quantized, 'r', 'DisplayName', 'Квантованный сигнал');
+    hold off;
+    title(sprintf('Сравнение амплитудных спектров для %d бит', bits));
+    xlabel('Частота (Гц)');
+    ylabel('Амплитуда');
+    xlim([0 fs/2]);
+    legend show;
+    grid on;
+        
+    fprintf('Средняя ошибка квантования для %d бит: %.4f\n', bits, mean_quantization_error);
+end

@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "nmmintrin.h": "c",
+        "smmintrin.h": "c",
+        "stdbool.h": "c"
+    }
+}
